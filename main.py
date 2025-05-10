@@ -1,6 +1,7 @@
 from pathlib import Path
 import argparse
 import json
+import logging
 from rag.ingest import IngestPipeline
 from rag.retriever import Retriever
 from rag.prompt_builder import PromptBuilder
@@ -21,28 +22,39 @@ def main():
     parser.add_argument("--skip-index", action="store_true", help="Skip indexing if index already exists")
     parser.add_argument("--show-code", choices=["none", "full", "diff"], default="full", help="Show code content")
     parser.add_argument("--llm", action="store_true", help="Use LLM to generate answer")
-    parser.add_argument("--model-name", type=str, default="tiiuae/falcon-7b-instruct", help="LLM model name")
+    parser.add_argument("--model-name", type=str, default="codellama/CodeLlama-7b-Instruct-hf", help="LLM model name")
+    parser.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], 
+                       default="INFO", help="Set the logging level")
     args = parser.parse_args()
 
-    print(f"{args=}")
+    # Configure logging
+    logging.basicConfig(
+        level=getattr(logging, args.log_level),
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
+
+    logger.debug(f"Arguments: {args}")
 
     if not args.skip_index or not Path(args.index).exists():
-        print("[Indexing] Running IngestPipeline...")
+        logger.info("[Indexing] Running IngestPipeline...")
         pipeline = IngestPipeline(repo_root=Path(args.repo), index_path=Path(args.index))
         pipeline.run()
 
-    print(f"[Retrieving] Query: {args.query}")
+    logger.info(f"[Retrieving] Query: {args.query}")
     retriever = Retriever(index_path=args.index)
     results = retriever.retrieve(args.query)
 
-    # 結果を表示
+    # 検索結果の表示（ログレベルに関係なく表示）
+    print("\n=== Search Results ===")
     for res in results:
         print(f"{res['score']:.4f} - {res['file_path']}#{res['symbol']}")
+    print("=====================\n")
 
     save_results_to_json(results, args.output)
-    print(f"[Saved] Results saved to: {args.output}")
+    logger.info(f"[Saved] Results saved to: {args.output}")
 
-    # コードの表示
+    # コードの表示（ログレベルに関係なく表示）
     if args.show_code != "none":
         from rag.display import show_full_code, show_diff
         if args.show_code == "full":
@@ -50,15 +62,16 @@ def main():
         elif args.show_code == "diff":
             show_diff(args.query, results)
 
-    # LLMによる回答生成
+    # LLMによる回答生成（ログレベルに関係なく表示）
     if args.llm:
-        print(f"[LLM] Generating answer with: {args.model_name}")
+        logger.info(f"[LLM] Generating answer with: {args.model_name}")
         builder = PromptBuilder()
         prompt = builder.build(args.query, results)
         responder = LLMResponder(model_name=args.model_name)
         answer = responder.generate(prompt)
-        print("\n[LLM Answer]")
+        print("\n=== LLM Answer ===")
         print(answer)
+        print("=================\n")
 
 
 if __name__ == "__main__":

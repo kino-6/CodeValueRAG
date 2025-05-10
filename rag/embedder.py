@@ -6,7 +6,9 @@ from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
 import joblib
 import torch
+from rag.utils import setup_logger
 
+logger = setup_logger(__name__)
 
 class CodeEmbedder:
     """
@@ -23,7 +25,7 @@ class CodeEmbedder:
             cache_dir (Path): Directory to store cached embeddings.
         """
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(f"{device=}")
+        logger.info(f"Using device: {device}")
         self.model = SentenceTransformer(model_name, device=device)
         self.cache_dir = cache_dir
         self.cache_dir.mkdir(parents=True, exist_ok=True)

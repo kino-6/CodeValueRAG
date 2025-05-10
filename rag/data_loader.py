@@ -1,6 +1,9 @@
 from pathlib import Path
 import ast
 from typing import List, Dict
+from rag.utils import setup_logger
+
+logger = setup_logger(__name__)
 
 class CodeDataLoader:
     def __init__(self, root_dir: Path):
@@ -25,8 +28,8 @@ class CodeDataLoader:
                             "content": code_text,
                         })
             except Exception as e:
-                print(f"[Error] Failed to parse {file_path}: {e}")
-        # print(f"[DEBUG] documents sample: {documents[:3]}")
+                logger.error(f"Failed to parse {file_path}: {e}")
+        logger.debug(f"Documents sample: {documents[:3]}")
         return documents
 
     def _get_end_line(self, node: ast.AST) -> int:

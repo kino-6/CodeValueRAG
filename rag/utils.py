@@ -1,7 +1,27 @@
 # rag/utils.py
 
 import ast
+import logging
 from typing import List, Tuple
+
+# Configure logging
+def setup_logger(name: str = None) -> logging.Logger:
+    """
+    Set up and return a logger instance.
+    
+    Args:
+        name (str, optional): Name of the logger. If None, returns the root logger.
+    
+    Returns:
+        logging.Logger: Configured logger instance.
+    """
+    logger = logging.getLogger(name)
+    if not logger.handlers:  # Only add handler if it doesn't already have one
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    return logger
 
 def extract_functions_with_source(source_code: str) -> List[Tuple[str, str]]:
     """

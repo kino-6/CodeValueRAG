@@ -2,6 +2,9 @@ from pathlib import Path
 from rag.data_loader import CodeDataLoader
 from rag.embedder import CodeEmbedder
 from rag.indexer import VectorIndexer
+from rag.utils import setup_logger
+
+logger = setup_logger(__name__)
 
 class IngestPipeline:
     def __init__(
@@ -13,7 +16,7 @@ class IngestPipeline:
         self.repo_root = repo_root
         self.embedder = CodeEmbedder(model_name)
         self.indexer = VectorIndexer(index_path)
-        print(f"[DEBUG] retriever metadata sample: {self.indexer.metadata[:3]}")
+        logger.debug(f"retriever metadata sample: {self.indexer.metadata[:3]}")
 
     def run(self):
         # Load code files (includes content and symbol)
@@ -21,7 +24,7 @@ class IngestPipeline:
         documents = loader.load()
 
         if not documents:
-            print("No code files found.")
+            logger.warning("No code files found.")
             return
 
         # Extract content and full metadata
@@ -34,16 +37,16 @@ class IngestPipeline:
             }
             for doc in documents
         ]
-        # print(f"[DEBUG] metadata sample: {metadata[:3]}")
+        logger.debug(f"metadata sample: {metadata[:3]}")
 
         # Embed
         embeddings = self.embedder.embed(texts)
 
         # Save to index
         self.indexer.add(embeddings, metadata)
-        print("="*100)
-        print(f"[DEBUG] indexer.metadata before save: {self.indexer.metadata[:3]}")
+        logger.debug("="*100)
+        logger.debug(f"indexer.metadata before save: {self.indexer.metadata[:3]}")
         self.indexer.save()
-        print(f"[DEBUG] indexer.metadata after save: {self.indexer.metadata[:3]}")
-        print("="*100)
-        print(f"Index saved to {self.indexer.index_path}")
+        logger.debug(f"indexer.metadata after save: {self.indexer.metadata[:3]}")
+        logger.debug("="*100)
+        logger.info(f"Index saved to {self.indexer.index_path}")
